@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "perfectHolmes_ApPractise"
+rootProject.name = "PerfectHolmes"
 include ':app'

@@ -1,4 +1,4 @@
-package com.example.perfectholmes_appractise;
+package com.example.perfectholmes;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;

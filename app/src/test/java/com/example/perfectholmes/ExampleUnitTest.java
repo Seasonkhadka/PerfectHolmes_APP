@@ -1,4 +1,4 @@
-package com.example.perfectholmes_appractise;
+package com.example.perfectholmes;
 
 import org.junit.Test;
 
