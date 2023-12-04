@@ -3,14 +3,19 @@ package com.example.perfectholmes_appractise;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 import android.view.ViewGroup;
 
+import net.daum.mf.map.api.MapPOIItem;
 import net.daum.mf.map.api.MapPoint;
 import net.daum.mf.map.api.MapView;
 
@@ -20,6 +25,7 @@ import java.security.NoSuchAlgorithmException;
 public class MainActivity extends AppCompatActivity implements MapView.CurrentLocationEventListener, MapView.MapViewEventListener {
     private MapView mapView;
     private ViewGroup mapViewContainer;
+    private MapPoint mapPoint;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,8 +43,19 @@ public class MainActivity extends AppCompatActivity implements MapView.CurrentLo
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
+/*
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
+        LocationListener locationListener = new LocationListener() {
+            public void onLocationChanged(Location location) {
+                double currentLatitude = location.getLatitude();
+                double currentLongitude = location.getLongitude();
+                // Use the mapPoint for your specific map operation
 
+                mapPoint = MapPoint.mapPointWithGeoCoord(currentLatitude, currentLongitude);
+            }
+
+        };*/
 //지도를 띄우자
         // java code
         mapView = new MapView(this);
@@ -47,11 +64,18 @@ public class MainActivity extends AppCompatActivity implements MapView.CurrentLo
         mapView.setMapViewEventListener(this);
         mapView.setCurrentLocationTrackingMode(MapView.CurrentLocationTrackingMode.TrackingModeOnWithoutHeading);
 
+/*
+        MapPOIItem customMarker = new MapPOIItem();
+        customMarker.setMapPoint(mapPoint);
+        customMarker.setMarkerType(MapPOIItem.MarkerType.CustomImage); // 마커타입을 커스텀 마커로 지정.
+        customMarker.setCustomImageResourceId(R.drawable.custom_marker_red); // 마커 이미지.
+        customMarker.setCustomImageAutoscale(false); // hdpi, xhdpi 등 안드로이드 플랫폼의 스케일을 사용할 경우 지도 라이브러리의 스케일 기능을 꺼줌.
+        customMarker.setCustomImageAnchor(0.5f, 1.0f); // 마커 이미지중 기준이 되는 위치(앵커포인트) 지정 - 마커 이미지 좌측 상단 기준 x(0.0f ~ 1.0f), y(0.0f ~ 1.0f) 값.
+        mapView.addPOIItem(customMarker);
 
-
-    }
-    // 권한 체크 이후로직
-    @Override
+    }*/
+        // 권한 체크 이후로직
+    /*@Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grandResults) {
         // READ_PHONE_STATE의 권한 체크 결과를 불러온다
         super.onRequestPermissionsResult(requestCode, permissions, grandResults);
@@ -71,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements MapView.CurrentLo
                 finish();
             }
         }
+    }*/
     }
     @Override
     public void onCurrentLocationUpdate(MapView mapView, MapPoint mapPoint, float v) {
