@@ -3,14 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.perfectholmes">
     <!-- 권한 추가 -->
-
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
-
-        android:usesCleartextTraffic="true"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -19,11 +16,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PerfectHolmes_ApPractise"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
-            android:name="com.example.perfectholmes.PermissionActivity"
-            android:exported="true"
-            >
+            android:name=".PerfextHolmes_app"
+            android:exported="false" />
+        <activity
+            android:name=".PermissionActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -31,18 +31,13 @@
             </intent-filter>
         </activity>
 
-
-
-
         <meta-data
             android:name="com.kakao.sdk.AppKey"
             android:value="2396abd82fcb2dcc3d9fa6bb8f469800" />
 
         <activity
-            android:name="com.example.perfectholmes.MainActivity"
-            android:exported="false">
-
-        </activity>
+            android:name=".MainActivity"
+            android:exported="false"></activity>
     </application>
 
 </manifest>

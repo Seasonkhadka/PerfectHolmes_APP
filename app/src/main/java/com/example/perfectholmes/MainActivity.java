@@ -10,13 +10,14 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.ViewGroup;
 
+import net.daum.mf.map.api.MapPOIItem;
 import net.daum.mf.map.api.MapPoint;
 import net.daum.mf.map.api.MapView;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class MainActivity extends AppCompatActivity implements MapView.CurrentLocationEventListener, MapView.MapViewEventListener {
+public class MainActivity extends AppCompatActivity implements MapView.OpenAPIKeyAuthenticationResultListener,MapView.CurrentLocationEventListener, MapView.MapViewEventListener,MapView.POIItemEventListener {
     private MapView mapView;
     private ViewGroup mapViewContainer;
     private MapPoint mapPoint;
@@ -56,7 +57,14 @@ public class MainActivity extends AppCompatActivity implements MapView.CurrentLo
         mapViewContainer = (ViewGroup) findViewById(R.id.map_view);
         mapViewContainer.addView(mapView);
         mapView.setMapViewEventListener(this);
+        mapView.setPOIItemEventListener(this);
         mapView.setCurrentLocationTrackingMode(MapView.CurrentLocationTrackingMode.TrackingModeOnWithoutHeading);
+
+        MapPOIItem marker1 = new MapPOIItem();
+        marker1.setTag(0);
+        //marker1.setMapPoint(MARKER_POINT);
+        marker1.setSelectedMarkerType(MapPOIItem.MarkerType.RedPin);
+        mapView.addPOIItem(marker1);
 
 /*
         MapPOIItem customMarker = new MapPOIItem();
@@ -153,6 +161,31 @@ public class MainActivity extends AppCompatActivity implements MapView.CurrentLo
 
     @Override
     public void onMapViewMoveFinished(MapView mapView, MapPoint mapPoint) {
+
+    }
+
+    @Override
+    public void onPOIItemSelected(MapView mapView, MapPOIItem mapPOIItem) {
+
+    }
+
+    @Override
+    public void onCalloutBalloonOfPOIItemTouched(MapView mapView, MapPOIItem mapPOIItem) {
+
+    }
+
+    @Override
+    public void onCalloutBalloonOfPOIItemTouched(MapView mapView, MapPOIItem mapPOIItem, MapPOIItem.CalloutBalloonButtonType calloutBalloonButtonType) {
+
+    }
+
+    @Override
+    public void onDraggablePOIItemMoved(MapView mapView, MapPOIItem mapPOIItem, MapPoint mapPoint) {
+
+    }
+
+    @Override
+    public void onDaumMapOpenAPIKeyAuthenticationResult(MapView mapView, int i, String s) {
 
     }
 }
