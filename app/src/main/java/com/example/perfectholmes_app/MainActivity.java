@@ -1,11 +1,12 @@
 package com.example.perfectholmes_app;
 
+import android.graphics.Color;
+import android.os.Bundle;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
-
-import android.graphics.Color;
-import android.os.Bundle;
 
 import com.naver.maps.geometry.LatLng;
 import com.naver.maps.map.MapFragment;
@@ -61,6 +62,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 circleOverlay.setRadius(1000); // 반경 1km
                 circleOverlay.setColor(Color.argb(50, 0, 0, 255)); // 반투명한 파란색
                 circleOverlay.setMap(naverMap);
+
+                // 마커를 찍은 위치의 경도와 위도 출력
+                double clickedLatitude = coord.latitude;
+                double clickedLongitude = coord.longitude;
+                String coordinates = String.format("위도: %f, 경도: %f", clickedLatitude, clickedLongitude);
+                Log.d("MapClickCoordinates", coordinates);
             }
         });
     }
