@@ -12,6 +12,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView lifestyle;
     private ImageView map;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

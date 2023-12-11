@@ -41,6 +41,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_lifestyle" />
 
+
+
     <TextView
         android:id="@+id/lifestyle_str"
         android:layout_width="wrap_content"
