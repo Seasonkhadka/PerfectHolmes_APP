@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/search_filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="40dp"
+                    android:layout_weight="1"
+                    />
+
+                <Button
+                    android:id="@+id/reset"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="초기화" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/building_type"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="건물 유형"
+                    android:textSize="25dp" />
+
+                <TableLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TableRow
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <Button
+                            android:id="@+id/type_1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="전세" />
+
+                        <Button
+                            android:id="@+id/type_2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="월세" />
+
+                        <Button
+                            android:id="@+id/type_3"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="매매" />
+                    </TableRow>
+
+                </TableLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+
+                <TextView
+                    android:id="@+id/buying"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ems="10"
+                    android:text="가격"
+                    android:textSize="25dp" />
+
+
+                <TextView
+                    android:id="@+id/price"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="25dp" />
+
+                <com.google.android.material.slider.RangeSlider
+                    android:id="@+id/price_range"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:stepSize="10.0"
+                    android:valueFrom="0.0"
+                    android:valueTo="100.0"
+                    app:values="@array/initial_slider_values" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+
+                <TextView
+                    android:id="@+id/per"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ems="10"
+                    android:text="평당 가격"
+                    android:textSize="25dp" />
+
+
+                <TextView
+                    android:id="@+id/per_price"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="25dp" />
+
+                <com.google.android.material.slider.RangeSlider
+                    android:id="@+id/per_range"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:stepSize="10.0"
+                    android:valueFrom="0.0"
+                    android:valueTo="100.0"
+                    app:values="@array/initial_slider_values" />
+
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+
+                <TextView
+                    android:id="@+id/lifestyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="25dp"
+                    android:text="라이프 스타일" />
+
+                <TableLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TableRow
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <Button
+                            android:id="@+id/healthy"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="건강" />
+
+                        <Button
+                            android:id="@+id/facilities"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="편의시설" />
+
+                        <Button
+                            android:id="@+id/culture"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="문화" />
+                    </TableRow>
+
+                    <TableRow
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <Button
+                            android:id="@+id/academy"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="학원" />
+
+                        <Button
+                            android:id="@+id/traffic"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="교통" />
+
+                    </TableRow>
+
+
+                </TableLayout>
+
+            </LinearLayout>
+
+
+        </LinearLayout>
+    </ScrollView>
+
+
+
+</LinearLayout>
