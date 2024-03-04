@@ -17,13 +17,13 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
 
+import com.example.perfectholmes_app.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.naver.maps.geometry.LatLng;
 import com.naver.maps.map.CameraUpdate;
 import com.naver.maps.map.MapFragment;
 import com.naver.maps.map.NaverMap;
 import com.naver.maps.map.OnMapReadyCallback;
-import com.naver.maps.map.overlay.Align;
 import com.naver.maps.map.overlay.CircleOverlay;
 import com.naver.maps.map.overlay.Marker;
 
@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -46,7 +47,8 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
     private CircleOverlay touchCircle;
     private boolean touchEnabled = false; // 터치 이벤트 활성화 여부
     private Marker searchMarker; // 검색된 위치를 나타내는 마커
-    private boolean isInCircle = false; // 원 안에 있는지 여부
+    private JSONArray facilitiesArray; // API에서 받은 시설 정보 배열
+    private ArrayList<Marker> allMarkers = new ArrayList<>(); // 모든 마커를 저장할 리스트
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,7 +89,9 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                 markerBtn.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.green))); // 활성화된 경우 초록색 배경
             } else {
                 markerBtn.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.red))); // 비활성화된 경우 빨간색 배경
+
             }
+            toggleMarkerAndCircle(); // 수정: toggleMarkerAndCircle 메서드 호출
         });
     }
 
@@ -95,7 +99,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
     public void onMapReady(@NonNull NaverMap naverMap) {
         this.naverMap = naverMap;
 
-        LatLng initialPosition = new LatLng(34.803743, 126.421689); // 초기 위치 (예: 서울)
+        LatLng initialPosition = new LatLng(34.803743, 126.421689);
         naverMap.moveCamera(CameraUpdate.scrollTo(initialPosition));
 
         naverMap.setOnMapClickListener((point, coord) -> {
@@ -145,6 +149,16 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
     private void toggleMarkerAndCircleAtLocation(double latitude, double longitude) {
         if (touchMarker != null) {
+            touchMarker.setPosition(new LatLng(latitude, longitude));
+            touchCircle.setCenter(new LatLng(latitude, longitude));
+
+            // 반경 안에 있는 API 정보에 대한 마커 추가
+            addFacilityMarkerInCircle(latitude, longitude);
+        }
+    }
+
+    private void toggleMarkerAndCircle() {
+        if (touchMarker != null) {
             touchMarker.setMap(null);
             touchMarker = null;
             if (touchCircle != null) {
@@ -153,18 +167,111 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
             }
         } else {
             touchMarker = new Marker();
-            touchMarker.setPosition(new LatLng(latitude, longitude));
+            touchMarker.setPosition(naverMap.getCameraPosition().target);
+            touchMarker.setIconTintColor(Color.BLUE); // 액션 버튼으로 생성된 마커는 파란색 아이콘 적용
             touchMarker.setMap(naverMap);
 
             touchCircle = new CircleOverlay();
-            touchCircle.setCenter(new LatLng(latitude, longitude));
+            touchCircle.setCenter(naverMap.getCameraPosition().target);
             touchCircle.setRadius(500);
             touchCircle.setColor(Color.argb(50, 255, 0, 0));
             touchCircle.setMap(naverMap);
 
-            isInCircle = isMarkerInCircle(latitude, longitude);
-            Log.d("isInCircle", "Is in circle: " + isInCircle);
+            // 반경 안에 있는 API 정보에 대한 마커 추가
+            addFacilityMarkerInCircle(naverMap.getCameraPosition().target.latitude, naverMap.getCameraPosition().target.longitude);
         }
+
+        // 액션 버튼 비활성화 시 노랑색 마커 제거
+        if (!touchEnabled && searchMarker != null) {
+            searchMarker.setMap(null);
+            searchMarker = null;
+        }
+
+        // 액션 버튼 비활성화 시 모든 노랑색 마커 제거
+        if (!touchEnabled) {
+            clearAllMarkers();
+        }
+    }
+
+    private void clearAllMarkers() {
+        for (Marker marker : allMarkers) {
+            marker.setMap(null);
+        }
+        allMarkers.clear();
+    }
+
+
+
+
+
+    private void addFacilityMarkerAtLocation(String address, double latitude, double longitude) {
+        // API에서 받은 주소 목록을 반복하여 모든 마커 추가
+        Marker facilityMarker = new Marker();
+        facilityMarker.setPosition(new LatLng(latitude, longitude));
+        facilityMarker.setIconTintColor(Color.RED); // API에서 받은 주소의 마커는 빨간색 아이콘 적용
+        facilityMarker.setMap(naverMap);
+        facilityMarker.setCaptionText(address);
+        allMarkers.add(facilityMarker); // 생성된 마커를 리스트에 추가
+        Log.e("GetFacilitiesTask", "Error fetching facilities from server" +  address);
+
+    }
+
+    private void addFacilityMarkerInCircle(double latitude, double longitude) {
+        // API에서 받은 주소 목록을 반복하여 반경 안에 있는 경우에만 마커 추가
+        if (touchCircle == null || facilitiesArray == null) {
+            return; // 원이 없거나 시설 정보가 없으면 처리 중단
+        }
+
+        // 이전에 추가된 마커 제거
+        for (Marker marker : allMarkers) {
+            marker.setMap(null);
+        }
+        allMarkers.clear();
+
+        for (int i = 0; i < facilitiesArray.length(); i++) {
+            try {
+                JSONObject facilityObject = facilitiesArray.getJSONObject(i);
+                double facilityLatitude = facilityObject.getDouble("lat");
+                double facilityLongitude = facilityObject.getDouble("lng");
+
+                LatLng facilityLatLng = new LatLng(facilityLatitude, facilityLongitude);
+                double distance = calculateDistance(new LatLng(latitude, longitude), facilityLatLng);
+                if (distance <= 500) {
+                    String address = facilityObject.getString("address");
+                    Marker facilityMarker = new Marker();
+                    facilityMarker.setPosition(facilityLatLng);
+                    facilityMarker.setIconTintColor(Color.RED); // API에서 받은 주소의 마커는 빨간색 아이콘 적용
+                    facilityMarker.setMap(naverMap);
+                    facilityMarker.setCaptionText(address);
+                    allMarkers.add(facilityMarker); // 생성된 마커를 리스트에 추가
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private double calculateDistance(LatLng point1, LatLng point2) {
+        // 지구 반지름 (미터)
+        final double EARTH_RADIUS = 6371000;
+
+        double lat1 = Math.toRadians(point1.latitude);
+        double lon1 = Math.toRadians(point1.longitude);
+        double lat2 = Math.toRadians(point2.latitude);
+        double lon2 = Math.toRadians(point2.longitude);
+
+        // 위도 및 경도 간의 차이 계산
+        double dLat = lat2 - lat1;
+        double dLon = lon2 - lon1;
+
+        // Haversine 공식을 사용하여 거리 계산
+        double a = Math.pow(Math.sin(dLat / 2), 2) +
+                Math.cos(lat1) * Math.cos(lat2) *
+                        Math.pow(Math.sin(dLon / 2), 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double distance = EARTH_RADIUS * c;
+
+        return distance;
     }
 
     private class GetFacilitiesTask extends AsyncTask<Void, Void, String> {
@@ -208,505 +315,17 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
     private void handleFacilitiesResponse(String response) {
         try {
-            JSONArray facilitiesArray = new JSONArray(response);
+            facilitiesArray = new JSONArray(response);
 
-            for (int i = 0; i < facilitiesArray.length(); i++) {
-                JSONObject facilityObject = facilitiesArray.getJSONObject(i);
-                String address = facilityObject.getString("address");
-                Log.d("FacilityAddress", "Facility Address: " + address);
-
-                // 시설 위치에 마커 추가
-                double latitude = facilityObject.getDouble("lat");
-                double longitude = facilityObject.getDouble("lng");
-                addFacilityMarkerAtLocation(address, latitude, longitude);
+            // 반경 안에 있는 API 정보에 대한 마커 추가
+            if (touchMarker != null && touchCircle != null) {
+                double latitude = touchMarker.getPosition().latitude;
+                double longitude = touchMarker.getPosition().longitude;
+                addFacilityMarkerInCircle(latitude, longitude);
             }
         } catch (JSONException e) {
             e.printStackTrace();
             Log.e("JSON Parsing", "Error parsing JSON: " + e.getMessage());
         }
     }
-
-    private void addFacilityMarkerAtLocation(String address, double latitude, double longitude) {
-        if (isInCircle) {
-            Marker facilityMarker = new Marker();
-            facilityMarker.setPosition(new LatLng(latitude, longitude));
-            facilityMarker.setMap(naverMap);
-            facilityMarker.setCaptionText(address);
-        }
-    }
-
-    private boolean isMarkerInCircle(double latitude, double longitude) {
-        if (touchCircle == null) {
-            return false;
-        }
-
-        LatLng circleCenter = touchCircle.getCenter();
-        double circleRadius = touchCircle.getRadius();
-        double distanceSquared = Math.pow(latitude - circleCenter.latitude, 2) + Math.pow(longitude - circleCenter.longitude, 2);
-        return distanceSquared <= Math.pow(circleRadius, 2);
-    }
 }
-
-
-
-
-
-///////
-
-
-
-//public class Map extends AppCompatActivity implements OnMapReadyCallback {
-//
-//    private NaverMap naverMap;
-//    private CircleOverlay touchCircle;
-//    private List<Marker> schoolMarkers = new ArrayList<>();
-//    private Marker touchMarker;
-//    private boolean touchEnabled = false;
-//    private FloatingActionButton markerBtn;
-//
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_map);
-//
-//        FragmentManager fm = getSupportFragmentManager();
-//        MapFragment mapFragment = (MapFragment) fm.findFragmentById(R.id.map);
-//        if (mapFragment == null) {
-//            mapFragment = MapFragment.newInstance();
-//            fm.beginTransaction().add(R.id.map, mapFragment).commit();
-//        }
-//
-//        mapFragment.getMapAsync(this);
-//
-//        markerBtn = findViewById(R.id.marker_btn); // 플로팅 액션 버튼 초기화
-//
-//        // 액션 버튼 클릭 이벤트 처리
-//        markerBtn.setOnClickListener(v -> {
-//            touchEnabled = !touchEnabled; // 터치 이벤트 활성화 상태를 토글
-//            if (!touchEnabled && touchMarker != null) { // 터치 이벤트 비활성화 상태에서만 실행
-//                touchMarker.setMap(null); // 마커 제거
-//                if (touchCircle != null) {
-//                    touchCircle.setMap(null); // 원 제거
-//                }
-//            }
-//        });
-//    }
-//
-//    @Override
-//    public void onMapReady(@NonNull NaverMap naverMap) {
-//        this.naverMap = naverMap;
-//
-//        // 초기 지도 설정
-//        LatLng initialPosition = new LatLng(37.5665, 126.9780); // 초기 위치 (예: 서울)
-//        naverMap.moveCamera(CameraUpdate.scrollTo(initialPosition));
-//
-//        // 지도 클릭 이벤트 처리
-//        naverMap.setOnMapClickListener((point, coord) -> {
-//            // 터치된 위치에 마커와 반경 500m의 원 추가 또는 제거
-//            toggleMarkerAndCircleAtLocation(coord.latitude, coord.longitude);
-//        });
-//
-//        // API에서 학교 데이터 가져오기
-//        GetSchoolsTask getSchoolsTask = new GetSchoolsTask();
-//        getSchoolsTask.execute();
-//    }
-//
-//    private void toggleMarkerAndCircleAtLocation(double latitude, double longitude) {
-//        // 터치된 위치에 마커 및 반경 500m의 원 추가 또는 제거
-//        if (touchMarker != null) {
-//            touchMarker.setMap(null);
-//            touchMarker = null;
-//            if (touchCircle != null) {
-//                touchCircle.setMap(null);
-//                touchCircle = null;
-//            }
-//        } else {
-//            touchMarker = new Marker();
-//            touchMarker.setPosition(new LatLng(latitude, longitude));
-//            touchMarker.setMap(naverMap);
-//
-//            touchCircle = new CircleOverlay();
-//            touchCircle.setCenter(new LatLng(latitude, longitude));
-//            touchCircle.setRadius(500); // 반경 500m
-//            touchCircle.setColor(Color.argb(50, 255, 0, 0)); // 반투명한 빨간색
-//            touchCircle.setMap(naverMap);
-//        }
-//    }
-//
-//    private void addMarkerAtLocation(double latitude, double longitude) {
-//        // 터치된 위치에 마커 추가
-//        if (touchMarker != null) {
-//            touchMarker.setMap(null);
-//            touchMarker = null;
-//        }
-//        touchMarker = new Marker();
-//        touchMarker.setPosition(new LatLng(latitude, longitude));
-//        touchMarker.setMap(naverMap);
-//    }
-//
-//    private void addSchoolMarkerAtLocation(String name, double latitude, double longitude) {
-//        // 학교 위치에 마커 추가
-//        Marker schoolMarker = new Marker();
-//        schoolMarker.setPosition(new LatLng(latitude, longitude));
-//        schoolMarker.setMap(naverMap);
-//        schoolMarker.setCaptionText(name);
-//
-//        // 생성된 학교 마커를 리스트에 추가
-//        schoolMarkers.add(schoolMarker);
-//    }
-//
-//    private class GetSchoolsTask extends AsyncTask<Void, Void, String> {
-//        @Override
-//        protected String doInBackground(Void... voids) {
-//            try {
-//                // 서버 엔드포인트 URL 설정
-//                String serverUrl = "http://43.202.188.79/facility/around?lat=34.806035&lng=126.418034"; // 서버 URL을 적절히 변경하세요.
-//                URL url = new URL(serverUrl);
-//
-//                // HTTP 연결 설정
-//                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-//                connection.setRequestMethod("GET");
-//
-//                // 서버 응답 읽기
-//                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-//                StringBuilder response = new StringBuilder();
-//                String line;
-//
-//                while ((line = reader.readLine()) != null) {
-//                    response.append(line);
-//                }
-//
-//                reader.close();
-//                connection.disconnect();
-//
-//                return response.toString();
-//            } catch (IOException e) {
-//                Log.e("GetSchoolsTask", "Error fetching schools from server", e);
-//                return null;
-//            }
-//        }
-//
-//        @Override
-//        protected void onPostExecute(String result) {
-//            if (result != null) {
-//                Log.d("GetSchoolsTask", "Server response: " + result);
-//                // 서버 응답을 처리하는 메서드 호출
-//                handleSchoolsResponse(result);
-//            } else {
-//                Log.e("GetSchoolsTask", "Server response is null");
-//                // 서버 응답이 null인 경우의 예외 처리 로직을 작성
-//            }
-//        }
-//    }
-//
-//    private void handleSchoolsResponse(String response) {
-//        try {
-//            // JSON 문자열을 JSONArray로 변환
-//            JSONArray schoolsArray = new JSONArray(response);
-//
-//            // 각 학교에 대해 마커 표시
-//            for (int i = 0; i < schoolsArray.length(); i++) {
-//                JSONObject schoolObject = schoolsArray.getJSONObject(i);
-//                int id = schoolObject.getInt("id");
-//                String createdAt = schoolObject.getString("created_at");
-//                String updatedAt = schoolObject.getString("updated_at");
-//                String name = schoolObject.getString("name");
-//                String address = schoolObject.getString("address");
-//                String type = schoolObject.getString("type");
-//                double latitude = schoolObject.getDouble("lat");
-//                double longitude = schoolObject.getDouble("lng");
-//
-//                // 학교 위치에 마커 추가
-//                addSchoolMarkerAtLocation(name, latitude, longitude);
-//
-//                // 원 안에 있는 학교인 경우에만 마커 표시
-//                if (isMarkerInCircle(latitude, longitude)) {
-//                    addMarkerAtLocation(latitude, longitude);
-//                }
-//
-//                // 학교
-//                Log.d("SchoolMarker", "School Name: " + name + ", Latitude: " + latitude + ", Longitude: " + longitude);
-//            }
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//            Log.e("JSON Parsing", "Error parsing JSON: " + e.getMessage()); // 에러 메시지 출력
-//        }
-//    }
-//
-//    private boolean isMarkerInCircle(double latitude, double longitude) {
-//        // 원 안에 있는지 여부를 검사하는 메서드
-//        LatLng circleCenter = touchCircle.getCenter();
-//        double circleRadius = touchCircle.getRadius();
-//        double distanceSquared = Math.pow(latitude - circleCenter.latitude, 2) + Math.pow(longitude - circleCenter.longitude, 2);
-//        return distanceSquared <= Math.pow(circleRadius, 2);
-//    }
-//}
-
-
-
-
-
-
-
-//
-//
-//
-//import android.graphics.Color;
-//import android.location.Address;
-//import android.location.Geocoder;
-//import android.os.Bundle;
-//import android.view.Gravity;
-//import android.view.inputmethod.EditorInfo;
-//import android.widget.EditText;
-//import android.widget.Toast;
-//
-//import androidx.annotation.NonNull;
-//import androidx.appcompat.app.AppCompatActivity;
-//import androidx.fragment.app.FragmentManager;
-//
-//import com.naver.maps.geometry.LatLng;
-//import com.naver.maps.map.CameraUpdate;
-//import com.naver.maps.map.MapFragment;
-//import com.naver.maps.map.NaverMap;
-//import com.naver.maps.map.OnMapReadyCallback;
-//import com.naver.maps.map.overlay.CircleOverlay;
-//import com.naver.maps.map.overlay.Marker;
-//
-//import java.io.IOException;
-//import java.util.List;
-//import java.util.Locale;
-//
-//public class Map extends AppCompatActivity implements OnMapReadyCallback {
-//
-//    private NaverMap naverMap;
-//    private Marker searchMarker;
-//    private Marker touchMarker;
-//    private CircleOverlay touchCircle;
-//
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_map);
-//
-//        FragmentManager fm = getSupportFragmentManager();
-//        MapFragment mapFragment = (MapFragment) fm.findFragmentById(R.id.map);
-//        if (mapFragment == null) {
-//            mapFragment = MapFragment.newInstance();
-//            fm.beginTransaction().add(R.id.map, mapFragment).commit();
-//        }
-//
-//        mapFragment.getMapAsync(this);
-//
-//        // 검색창에서 주소 검색
-//        EditText editText = findViewById(R.id.editTextTextPersonName);
-//        editText.setOnEditorActionListener((v, actionId, event) -> {
-//            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-//                String address = editText.getText().toString();
-//                if (!address.isEmpty()) {
-//                    searchAddress(address);
-//                    return true;
-//                }
-//            }
-//            return false;
-//        });
-//    }
-//
-//    @Override
-//    public void onMapReady(@NonNull NaverMap naverMap) {
-//        this.naverMap = naverMap;
-//
-//        // 초기 지도 설정
-//        LatLng initialPosition = new LatLng(37.5665, 126.9780); // 초기 위치 (예: 서울)
-//        naverMap.moveCamera(CameraUpdate.scrollTo(initialPosition));
-//
-//        // 지도 클릭 이벤트 처리
-//        naverMap.setOnMapClickListener((point, coord) -> {
-//            // 터치된 위치에 마커와 반경 500m의 원 추가 또는 제거
-//            toggleMarkerAndCircleAtLocation(coord.latitude, coord.longitude);
-//        });
-//    }
-//
-//    private void searchAddress(String address) {
-//        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
-//        try {
-//            List<Address> addresses = geocoder.getFromLocationName(address, 1);
-//            if (!addresses.isEmpty()) {
-//                Address resultAddress = addresses.get(0);
-//                LatLng resultLatLng = new LatLng(resultAddress.getLatitude(), resultAddress.getLongitude());
-//
-//                // 검색된 주소의 좌표로 지도 이동
-//                naverMap.moveCamera(CameraUpdate.scrollTo(resultLatLng));
-//
-//                // 검색된 위치에 마커 추가
-//                addSearchMarkerAtLocation(resultLatLng.latitude, resultLatLng.longitude);
-//            } else {
-//                // 검색 결과가 없는 경우 처리
-//                showErrorMessage("입력하신 주소가 없습니다.");
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    private void showErrorMessage(String message) {
-//        // Toast 메시지로 에러 메시지 표시
-//        Toast toast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
-//        toast.setGravity(Gravity.CENTER, 0, 0);
-//        toast.show();
-//    }
-//
-//    private void addSearchMarkerAtLocation(double latitude, double longitude) {
-//        // 이전에 생성된 검색 마커 제거
-//        if (searchMarker != null) {
-//            searchMarker.setMap(null);
-//            searchMarker = null;
-//        }
-//
-//        // 검색된 위치에 새로운 마커 추가
-//        searchMarker = new Marker();
-//        searchMarker.setPosition(new LatLng(latitude, longitude));
-//        searchMarker.setMap(naverMap);
-//    }
-//
-//    private void toggleMarkerAndCircleAtLocation(double latitude, double longitude) {
-//        // 터치된 위치에 마커 및 반경 500m의 원 추가 또는 제거
-//        if (touchMarker != null) {
-//            touchMarker.setMap(null);
-//            touchMarker = null;
-//            if (touchCircle != null) {
-//                touchCircle.setMap(null);
-//                touchCircle = null;
-//            }
-//        } else {
-//            touchMarker = new Marker();
-//            touchMarker.setPosition(new LatLng(latitude, longitude));
-//            touchMarker.setMap(naverMap);
-//
-//            touchCircle = new CircleOverlay();
-//            touchCircle.setCenter(new LatLng(latitude, longitude));
-//            touchCircle.setRadius(500); // 반경 500m
-//            touchCircle.setColor(Color.argb(50, 255, 0, 0)); // 반투명한 빨간색
-//            touchCircle.setMap(naverMap);
-//        }
-//    }
-//}
-
-
-
-
-//---------------------------------------------------------------------------------
-//
-//마커에 지도 표시, 검색 창 없음
-//public class Map extends AppCompatActivity implements OnMapReadyCallback {
-//
-//    private Marker clickedMarker;
-//    private CircleOverlay circleOverlay;
-//    private NaverMap naverMap;
-//
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_map);
-//
-//        FragmentManager fm = getSupportFragmentManager();
-//        MapFragment mapFragment = (MapFragment) fm.findFragmentById(R.id.map);
-//        if (mapFragment == null) {
-//            mapFragment = MapFragment.newInstance();
-//            fm.beginTransaction().add(R.id.map, mapFragment).commit();
-//        }
-//
-//        mapFragment.getMapAsync(this);
-//
-//        // 검색창에서 주소 검색
-//        EditText editText = findViewById(R.id.editTextTextPersonName);
-//        editText.setOnEditorActionListener((v, actionId, event) -> {
-//            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-//                String address = editText.getText().toString();
-//                if (!address.isEmpty()) {
-//                    searchAddress(address);
-//                    return true;
-//                }
-//            }
-//            return false;
-//        });
-//    }
-//
-//    @Override
-//    public void onMapReady(@NonNull NaverMap naverMap) {
-//        // 목포의 좌표를 사용하여 지도 초기화
-//        LatLng initialPosition = new LatLng(34.7915, 126.3922);
-//        naverMap.moveCamera(com.naver.maps.map.CameraUpdate.scrollTo(initialPosition));
-//
-//        // 지도를 클릭할 때 이벤트 처리
-//        naverMap.setOnMapClickListener((point, coord) -> {
-//            if (clickedMarker != null) {
-//                clickedMarker.setMap(null); // 이전 마커 삭제
-//                clickedMarker = null;
-//                if (circleOverlay != null) {
-//                    circleOverlay.setMap(null); // 이전 원 삭제
-//                    circleOverlay = null;
-//                }
-//            } else {
-//                // 클릭된 위치에 마커 추가
-//                clickedMarker = new Marker();
-//                clickedMarker.setPosition(new LatLng(coord.latitude, coord.longitude));
-//                clickedMarker.setMap(naverMap);
-//
-//                // 클릭된 위치를 중심으로 반경 1km의 원 추가
-//                circleOverlay = new CircleOverlay();
-//                circleOverlay.setCenter(new LatLng(coord.latitude, coord.longitude));
-//                circleOverlay.setRadius(1000); // 반경 1km
-//                circleOverlay.setColor(Color.argb(50, 0, 0, 255)); // 반투명한 파란색
-//                circleOverlay.setMap(naverMap);
-//
-//                // 마커를 찍은 위치의 경도와 위도 출력
-//                double clickedLatitude = coord.latitude;
-//                double clickedLongitude = coord.longitude;
-//                String coordinates = String.format("위도: %f, 경도: %f", clickedLatitude, clickedLongitude);
-//                Log.d("MapClickCoordinates", coordinates);
-//            }
-//        });
-//    }
-//
-//    private void searchAddress(String address) {
-//        // 주소를 좌표로 변환하여 지도에 표시
-//        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
-//        try {
-//            List<Address> addresses = geocoder.getFromLocationName(address, 1);
-//            if (!addresses.isEmpty()) {
-//                Address resultAddress = addresses.get(0);
-//                LatLng resultLatLng = new LatLng(resultAddress.getLatitude(), resultAddress.getLongitude());
-//
-//                // 검색된 주소의 좌표로 지도 이동
-//                CameraUpdate cameraUpdate = CameraUpdate.scrollTo(resultLatLng);
-//                naverMap.moveCamera(cameraUpdate);
-//
-//                // 검색된 위치에 마커 및 원 추가 (원하는 경우)
-//                if (clickedMarker != null) {
-//                    clickedMarker.setMap(null);
-//                    clickedMarker = null;
-//                    if (circleOverlay != null) {
-//                        circleOverlay.setMap(null);
-//                        circleOverlay = null;
-//                    }
-//                }
-//                clickedMarker = new Marker();
-//                clickedMarker.setPosition(resultLatLng);
-//                clickedMarker.setMap(naverMap);
-//
-//                circleOverlay = new CircleOverlay();
-//                circleOverlay.setCenter(resultLatLng);
-//                circleOverlay.setRadius(1000); // 반경 1km
-//                circleOverlay.setColor(Color.argb(50, 0, 0, 255)); // 반투명한 파란색
-//                circleOverlay.setMap(naverMap);
-//            } else {
-//                // 검색 결과가 없는 경우 처리
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//}
-
-
-

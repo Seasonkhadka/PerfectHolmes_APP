@@ -33,6 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_alignParentBottom="false"
+            android:layout_gravity="right"
             android:layout_margin="16dp"
             android:src="@drawable/marker_img" />
     </FrameLayout>
